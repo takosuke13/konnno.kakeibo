@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>かんたん夫婦の家計簿</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #f1f8e9;
+            --text-color: #333;
+            --border-color: #ddd;
+            --danger-color: #f44336;
+            --white: #fff;
+            --settlement-color: #2196F3;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        h3 {
+            border-bottom-style: dashed;
+            margin-top: 30px;
+        }
+        .category-summary {
+            text-align: right;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            padding-right: 5px;
+            color: var(--text-color);
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .input-field {
+            flex: 1;
+            min-width: 120px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"], input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+            background-color: var(--white);
+        }
+        .date-selector {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .date-selector .input-group {
+            margin-bottom: 0;
+        }
+        .costs-list {
+            list-style: none;
+            padding: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .costs-list:not(:empty) { max-height: 300px; overflow-y: auto; }
+        .costs-list:empty::after {
+            content: "ここに項目が追加されます";
+            display: block;
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-style: italic;
+        }
+        .costs-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .costs-item:nth-child(odd) {
+            background-color: var(--secondary-color);
+        }
+        .costs-item > * { flex: 1; }
+        .costs-item .cost-name { flex-grow: 2; min-width: 120px; }
+        .costs-item .cost-amount { min-width: 100px; }
+        .costs-item .cost-paid-by, .costs-item .cost-paid-by-label { font-size: 0.9em; color: #555; min-width: 100px; }
+        .costs-item .cost-date { flex-basis: 150px; }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            color: var(--white);
+            background-color: var(--primary-color);
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+        .btn:hover { background-color: #45a049; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #e53935; }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .results-table caption {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--primary-color);
+            padding: 10px 0;
+            text-align: left;
+            border-bottom: 2px dashed var(--primary-color);
+            margin-bottom: 10px;
+        }
+        .results-table th, .results-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: right;
+        }
+        .results-table th {
+            background-color: var(--secondary-color);
+            font-weight: bold;
+            text-align: left;
+            width: 35%;
+        }
+        .results-table td {
+            background-color: var(--white);
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .results-table thead th {
+            text-align: center;
+            background-color: #e8f5e9;
+        }
+        .settlement-table {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .settlement-table td {
+            background-color: var(--settlement-color);
+            color: var(--white);
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .share-section textarea { width: 100%; min-height: 100px; margin-top: 10px; border-radius: 4px; border: 1px solid var(--border-color); padding: 10px; box-sizing: border-box; }
+        .actions { display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px; }
+
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 35px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #settlement-details-content h3 { 
+            margin-top: 20px; 
+            border-bottom: 1px solid var(--primary-color); 
+            padding-bottom: 8px; 
+            color: var(--primary-color); 
+        }
+        .settlement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .payment-list { list-style: none; padding: 0; }
+        .payment-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .payment-list li span:last-child { font-weight: bold; }
+
+        @media print {
+            body { padding: 0; background-color: var(--white); }
+            .container { box-shadow: none; border: 1px solid var(--border-color); }
+            .btn, .share-section, .actions, .date-selector, h2:has(+ .share-section), .variable-cost-form, #add-fixed-cost-btn {
+                display: none;
+            }
+            h1, h2, h3 { text-align: left; }
+            .results-grid { grid-template-columns: 1fr 1fr; }
+            .costs-item input, .costs-item select, .costs-item button { display: none; }
+            .costs-item .cost-paid-by-label::after { content: attr(data-paid-by); }
+        }
+    </style>
+</head>
+<body>
+    <div id="login-view" class="container" style="text-align: center; padding-top: 50px; padding-bottom: 50px;">
+        <h1>かんたん夫婦の家計簿</h1>
+        <p>データを安全に共有するため、Googleアカウントでログインしてください。</p>
+        <button id="login-btn" class="btn">Googleアカウントでログイン</button>
+    </div>
+
+    <div id="app-view" style="display: none;">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <p id="user-info" style="margin: 0; font-weight: bold;"></p>
+                <div id="save-status" style="font-size: 0.9em; color: #666;"></div>
+                <button id="logout-btn" class="btn btn-danger">ログアウト</button>
+            </div>
+            <h1>かんたん夫婦の家計簿</h1>
+
+            <div class="section date-selector">
+                <div class="input-group">
+                    <div class="input-field"><label for="year-select">年</label><select id="year-select"></select></div>
+                    <div class="input-field"><label for="month-select">月</label><select id="month-select"></select></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>1. 収入</h2>
+                <div class="input-group">
+                    <div class="input-field"><label for="husband-income">あきひろの月収（円）</label><input type="number" id="husband-income" placeholder="例: 300000"></div>
+                    <div class="input-field"><label for="wife-income">さとみの月収（円）</label><input type="number" id="wife-income" placeholder="例: 300000"></div>
+                </div>
+                <div style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin-top: -10px; margin-bottom: 20px; font-size: 0.9em;">
+                    <small><strong>※負担割合の計算について</strong><br>負担割合は、以下の調整後金額を基に計算されます。<br>・あきひろ：月収 - 75,250円（住宅手当分）<br>・さとみ：月収 + 5,000円</small>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. 固定費</h2>
+                <ul id="fixed-costs-list" class="costs-list"></ul>
+                <div id="rent-details" style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin: 10px 0; font-size: 0.9em;"></div>
+                <button id="add-fixed-cost-btn" class="btn">＋ 固定費を追加</button>
+            </div>
+
+            <div class="section">
+                <h2>3. 変動費</h2>
+                <h3>食費</h3>
+                <div class="category-summary"><strong>合計: <span id="food-total">0円</span></strong></div>
+                <div class="input-group variable-cost-form">
+                    <div class="input-field"><label for="food-date">日付</label><input type="date" id="food-date"></div>
+                    <div class="input-field"><label for="food-name">内容</label><input type="text" id="food-name" placeholder="スーパー〇〇"></div>
+                    <div class="input-field"><label for="food-amount">金額</label><input type="number" id="food-amount" placeholder="金額" inputmode="numeric"></div>
+                    <div class="input-field"><label for="food-paid-by">支払者</label><select id="food-paid-by"><option value="akihiro">あきひろ</option><option value="satomi">さとみ</option></select></div>
+                    <button id="add-food-btn" class="btn">追加</button>
+                </div>
+                <ul id="food-costs-list" class="costs-list"></ul>
+
+                <h3>ウチに使った費用</h3>
+                <div class="category-summary"><strong>合計: <span id="uchi-total">0円</span></strong></div>
+                <div class="input-group variable-cost-form">
+                    <div class="input-field"><label for="uchi-date">日付</label><input type="date" id="uchi-date"></div>
+                    <div class="input-field"><label for="uchi-name">内容</label><input type="text" id="uchi-name" placeholder="食料品"></div>
+                    <div class="input-field"><label for="uchi-amount">金額</label><input type="number" id="uchi-amount" placeholder="金額" inputmode="numeric"></div>
+                    <div class="input-field"><label for="uchi-paid-by">支払者</label><select id="uchi-paid-by"><option value="akihiro">あきひろ</option><option value="satomi">さとみ</option></select></div>
+                    <button id="add-uchi-btn" class="btn">追加</button>
+                </div>
+                <ul id="uchi-costs-list" class="costs-list"></ul>
+
+                <h3>ソトに使った費用</h3>
+                <div class="category-summary"><strong>合計: <span id="soto-total">0円</span></strong></div>
+                <div class="input-group variable-cost-form">
+                    <div class="input-field"><label for="soto-date">日付</label><input type="date" id="soto-date"></div>
+                    <div class="input-field"><label for="soto-name">内容</label><input type="text" id="soto-name" placeholder="外食"></div>
+                    <div class="input-field"><label for="soto-amount">金額</label><input type="number" id="soto-amount" placeholder="金額" inputmode="numeric"></div>
+                    <div class="input-field"><label for="soto-paid-by">支払者</label><select id="soto-paid-by"><option value="akihiro">あきひろ</option><option value="satomi">さとみ</option></select></div>
+                    <button id="add-soto-btn" class="btn">追加</button>
+                </div>
+                <ul id="soto-costs-list" class="costs-list"></ul>
+            </div>
+
+            <div class="section">
+                <h2>4. 計算結果</h2>
+                <div id="results"></div>
+                <div style="width: 100%; max-width: 400px; margin: 20px auto;">
+                    <canvas id="expense-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="reset-btn" class="btn btn-danger">今月のデータをリセット</button>
+                <div>
+                    <button id="line-share-btn" class="btn" style="background-color: #00B900;">LINEで共有</button>
+                    <button id="settlement-details-btn" class="btn">精算の詳細</button>
+                    <button id="print-btn" class="btn">このページを印刷</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settlement Details Modal -->
+    <div id="settlement-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>精算の詳細</h2>
+            <div id="settlement-details-content"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyC8HrlOCIttV5geKeUKAIMY0t7A_wISS8Q",
+        authDomain: "konnnokenokakeibo-gemini.firebaseapp.com",
+        projectId: "konnnokenokakeibo-gemini",
+        storageBucket: "konnnokenokakeibo-gemini.appspot.com",
+        messagingSenderId: "788497387541",
+        appId: "1:788497387541:web:15bb8598440831514e7e1c"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Element Selectors ---
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userInfoEl = document.getElementById('user-info');
+        const saveStatusEl = document.getElementById('save-status');
+        
+        const yearSelectEl = document.getElementById('year-select');
+        const monthSelectEl = document.getElementById('month-select');
+        const husbandIncomeEl = document.getElementById('husband-income');
+        const wifeIncomeEl = document.getElementById('wife-income');
+        const fixedCostsListEl = document.getElementById('fixed-costs-list');
+        const addFixedCostBtn = document.getElementById('add-fixed-cost-btn');
+        const rentDetailsEl = document.getElementById('rent-details');
+        const resultsEl = document.getElementById('results');
+        const printBtn = document.getElementById('print-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const lineShareBtn = document.getElementById('line-share-btn');
+
+        // Modal elements
+        const settlementModal = document.getElementById('settlement-modal');
+        const settlementDetailsBtn = document.getElementById('settlement-details-btn');
+        const settlementDetailsContentEl = document.getElementById('settlement-details-content');
+        const closeBtn = document.querySelector('.close-btn');
+
+        // Variable Costs Elements
+        const foodDateEl = document.getElementById('food-date');
+        const foodNameEl = document.getElementById('food-name');
+        const foodAmountEl = document.getElementById('food-amount');
+        const foodPaidByEl = document.getElementById('food-paid-by');
+        const addFoodBtn = document.getElementById('add-food-btn');
+        const foodCostsListEl = document.getElementById('food-costs-list');
+
+        const uchiDateEl = document.getElementById('uchi-date');
+        const uchiNameEl = document.getElementById('uchi-name');
+        const uchiAmountEl = document.getElementById('uchi-amount');
+        const uchiPaidByEl = document.getElementById('uchi-paid-by');
+        const addUchiBtn = document.getElementById('add-uchi-btn');
+        const uchiCostsListEl = document.getElementById('uchi-costs-list');
+
+        const sotoDateEl = document.getElementById('soto-date');
+        const sotoNameEl = document.getElementById('soto-name');
+        const sotoAmountEl = document.getElementById('soto-amount');
+        const sotoPaidByEl = document.getElementById('soto-paid-by');
+        const addSotoBtn = document.getElementById('add-soto-btn');
+        const sotoCostsListEl = document.getElementById('soto-costs-list');
+
+        // Category total elements
+        const foodTotalEl = document.getElementById('food-total');
+        const uchiTotalEl = document.getElementById('uchi-total');
+        const sotoTotalEl = document.getElementById('soto-total');
+
+        let currentData = {};
+        let unsubscribe; // To detach Firestore listener
+        let expenseChart = null; // To hold the chart instance
+
+        // --- Authentication --- 
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in.
+                loginView.style.display = 'none';
+                appView.style.display = 'block';
+                userInfoEl.textContent = `${user.displayName} としてログイン中`;
+                initApp();
+            } else {
+                // User is signed out.
+                loginView.style.display = 'block';
+                appView.style.display = 'none';
+                userInfoEl.textContent = '';
+                if (unsubscribe) {
+                    unsubscribe(); // Stop listening to data changes
+                }
+            }
+        });
+
+        loginBtn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(error => {
+                console.error("ログインエラー", error);
+                alert(`ログインに失敗しました: ${error.message}`);
+            });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // --- App Initialization ---
+        function initApp() {
+            populateDateSelectors();
+            loadData(); // This will now load from Firestore
+        }
+
+        function populateDateSelectors() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+
+            yearSelectEl.innerHTML = '';
+            monthSelectEl.innerHTML = '';
+
+            for (let i = currentYear - 5; i <= currentYear + 5; i++) { yearSelectEl.add(new Option(`${i}年`, i)); }
+            for (let i = 1; i <= 12; i++) { monthSelectEl.add(new Option(`${i}月`, i)); }
+            
+            yearSelectEl.value = localStorage.getItem('lastSelectedYear') || currentYear;
+            monthSelectEl.value = localStorage.getItem('lastSelectedMonth') || currentMonth;
+            
+            setDefaultDates();
+        }
+
+        function setDefaultDates() {
+            const firstDayOfSelectedMonth = `${yearSelectEl.value}-${String(monthSelectEl.value).padStart(2, '0')}-01`;
+            foodDateEl.value = firstDayOfSelectedMonth;
+            uchiDateEl.value = firstDayOfSelectedMonth;
+            sotoDateEl.value = firstDayOfSelectedMonth;
+        }
+
+        function getCurrentDocRef() {
+            const docId = `${yearSelectEl.value}_${monthSelectEl.value}`;
+            return db.collection('kakeibo').doc(docId);
+        }
+
+        function createDefaultData() {
+            const apartmentCost = Math.round((80000 + 7700 + 3000 + 880) * 1.02);
+            return {
+                husbandIncome: 0,
+                wifeIncome: 0,
+                fixedCosts: [
+                    { name: '家賃', amount: apartmentCost, paidBy: 'akihiro', isPayerEditable: false },
+                    { name: '電気代', amount: 0, paidBy: 'akihiro', isPayerEditable: false },
+                    { name: '水道代（2ヶ月に1回）', amount: 0, paidBy: 'akihiro', isPayerEditable: false },
+                    { name: '保育園給食代', amount: 5000, paidBy: 'akihiro', isPayerEditable: true }
+                ],
+                variableCosts: []
+            };
+        }
+
+        async function saveData() {
+            saveStatusEl.textContent = '保存中...';
+            try {
+                await getCurrentDocRef().set(currentData, { merge: true });
+                const now = new Date();
+                saveStatusEl.textContent = `最終保存: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            } catch (e) {
+                console.error("データの保存に失敗しました。", e);
+                saveStatusEl.textContent = '保存エラー';
+                alert("データの保存に失敗しました。通信環境を確認してください。");
+            }
+        }
+
+        function loadData() {
+            if (unsubscribe) {
+                unsubscribe(); // Detach previous listener
+            }
+
+            unsubscribe = getCurrentDocRef().onSnapshot(doc => {
+                const defaultData = createDefaultData();
+                let needsSave = false;
+
+                if (doc.exists) {
+                    currentData = doc.data();
+                    // Ensure data structure is sound with a more robust check
+                    if (!Array.isArray(currentData.fixedCosts) || currentData.fixedCosts.length === 0) {
+                        console.log("Fixed costs are missing or invalid. Restoring defaults.");
+                        currentData.fixedCosts = defaultData.fixedCosts;
+                        needsSave = true;
+                    }
+                    if (!Array.isArray(currentData.variableCosts)) {
+                        currentData.variableCosts = []; // Initialize as empty array if missing
+                        needsSave = true;
+                    }
+                } else {
+                    console.log("No data for this month. Creating default.");
+                    currentData = defaultData;
+                    needsSave = true; // Save the default data to create the document
+                }
+                
+                // Update UI with the new data
+                husbandIncomeEl.value = currentData.husbandIncome || '';
+                wifeIncomeEl.value = currentData.wifeIncome || '';
+                updateAllUI();
+
+                if (needsSave) {
+                    console.log("Saving restored/new data to Firestore.");
+                    saveData();
+                }
+
+            }, error => {
+                console.error("データの読み込みに失敗しました", error);
+                alert("データの読み込みに失敗しました。ページを再読み込みしてください。");
+            });
+        }
+
+        function updateAllUI() {
+            renderFixedCosts();
+            renderVariableCosts();
+            renderRentDetails();
+            calculateAndRenderResults();
+        }
+
+        // --- Rendering Functions ---
+        function renderFixedCosts() {
+            fixedCostsListEl.innerHTML = '';
+            (currentData.fixedCosts || []).forEach((cost, index) => {
+                const li = document.createElement('li');
+                li.className = 'costs-item';
+                let payerHtml;
+                if (cost.isPayerEditable) {
+                    payerHtml = `<select class="cost-paid-by" data-index="${index}"><option value="akihiro" ${cost.paidBy === 'akihiro' ? 'selected' : ''}>あきひろ</option><option value="satomi" ${cost.paidBy === 'satomi' ? 'selected' : ''}>さとみ</option></select>`;
+                } else {
+                    payerHtml = `<span class="cost-paid-by-label">支払者: ${cost.paidBy === 'akihiro' ? 'あきひろ' : 'さとみ'}</span>`;
+                }
+                li.innerHTML = `
+                    <input type="text" class="cost-name" value="${escapeHTML(cost.name)}" placeholder="項目名" data-index="${index}">
+                    <input type="number" class="cost-amount" value="${cost.amount === 0 || cost.amount === null ? '' : cost.amount}" placeholder="金額" inputmode="numeric" data-index="${index}">
+                    ${payerHtml}
+                    <button class="btn btn-danger" data-index="${index}" style="flex: 0.5;">削除</button>
+                `;
+                fixedCostsListEl.appendChild(li);
+            });
+        }
+        
+        function renderVariableCosts() {
+            foodCostsListEl.innerHTML = '';
+            uchiCostsListEl.innerHTML = '';
+            sotoCostsListEl.innerHTML = '';
+
+            let foodTotal = 0;
+            let uchiTotal = 0;
+            let sotoTotal = 0;
+            const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
+            
+            const sortedCosts = (currentData.variableCosts || []).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            sortedCosts.forEach(cost => {
+                const li = document.createElement('li');
+                li.className = 'costs-item';
+                li.dataset.id = cost.id;
+                li.innerHTML = `
+                    <input type="date" class="cost-date" value="${escapeHTML(cost.date)}">
+                    <input type="text" class="cost-name" value="${escapeHTML(cost.name)}">
+                    <input type="number" class="cost-amount" value="${cost.amount === 0 || cost.amount === null ? '' : cost.amount}" placeholder="金額" inputmode="numeric">
+                    <select class="cost-paid-by">
+                        <option value="akihiro" ${cost.paidBy === 'akihiro' ? 'selected' : ''}>あきひろ</option>
+                        <option value="satomi" ${cost.paidBy === 'satomi' ? 'selected' : ''}>さとみ</option>
+                    </select>
+                    <button class="btn btn-danger" style="flex: 0.5;">削除</button>
+                `;
+                if (cost.type === 'food') {
+                    foodTotal += cost.amount || 0;
+                    foodCostsListEl.appendChild(li);
+                } else if (cost.type === 'uchi') {
+                    uchiTotal += cost.amount || 0;
+                    uchiCostsListEl.appendChild(li);
+                } else if (cost.type === 'soto') {
+                    sotoTotal += cost.amount || 0;
+                    sotoCostsListEl.appendChild(li);
+                }
+            });
+
+            foodTotalEl.textContent = formatYen(foodTotal);
+            uchiTotalEl.textContent = formatYen(uchiTotal);
+            sotoTotalEl.textContent = formatYen(sotoTotal);
+        }
+
+        function renderRentDetails() {
+            rentDetailsEl.innerHTML = `<strong>家賃内訳:</strong> アパート代: 80,000円, 駐車場: 7,700円, 共益費: 3,000円, ライフサポート24: 880円 <small>(※合計 91,580円の102%が家賃として計上されます)</small>`;
+        }
+
+        function calculateAndRenderResults() {
+            const husbandIncome = currentData.husbandIncome || 0;
+            const wifeIncome = currentData.wifeIncome || 0;
+            const totalIncome = husbandIncome + wifeIncome;
+            const totalFixedCosts = (currentData.fixedCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalVariableCosts = (currentData.variableCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalFoodCosts = (currentData.variableCosts || []).filter(c => c.type === 'food').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalUchiCosts = (currentData.variableCosts || []).filter(c => c.type === 'uchi').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalSotoCosts = (currentData.variableCosts || []).filter(c => c.type === 'soto').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalCosts = totalFixedCosts + totalVariableCosts;
+            const adjustedHusbandIncome = Math.max(0, husbandIncome - 75250);
+            const adjustedWifeIncome = Math.max(0, wifeIncome + 5000);
+            const adjustedTotalIncome = adjustedHusbandIncome + adjustedWifeIncome;
+
+            let husbandRatio, wifeRatio;
+            if (adjustedTotalIncome <= 0) {
+                husbandRatio = 0.5; wifeRatio = 0.5;
+            } else {
+                husbandRatio = adjustedHusbandIncome / adjustedTotalIncome;
+                wifeRatio = 1 - husbandRatio;
+            }
+
+            const adjustedTotalCostsForBurden = totalCosts - 70250;
+            let husbandBurden = Math.round(adjustedTotalCostsForBurden * husbandRatio);
+            let wifeBurden = Math.round(adjustedTotalCostsForBurden * wifeRatio);
+            const diff = adjustedTotalCostsForBurden - (husbandBurden + wifeBurden);
+            if (diff !== 0) { husbandBurden += diff; }
+
+            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
+            const husbandTotalPaid = allCosts.filter(c => c.paidBy === 'akihiro').reduce((sum, c) => sum + (c.amount || 0), 0);
+            const wifeTotalPaid = allCosts.filter(c => c.paidBy === 'satomi').reduce((sum, c) => sum + (c.amount || 0), 0);
+            const husbandSettlement = (husbandTotalPaid - 70250) - husbandBurden;
+            
+            let settlementText = '精算は不要です。';
+            if (husbandSettlement > 0) {
+                settlementText = `さとみは → あきひろに <strong>${Math.round(husbandSettlement).toLocaleString()}円</strong> 支払う`;
+            } else if (husbandSettlement < 0) {
+                settlementText = `あきひろは → さとみに <strong>${Math.round(-husbandSettlement).toLocaleString()}円</strong> 支払う`;
+            }
+            
+            const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
+
+            resultsEl.innerHTML = `
+                <table class="results-table"><caption>サマリー</caption><tbody>
+                    <tr><th>合計収入</th><td>${formatYen(totalIncome)}</td></tr>
+                    <tr><th>合計支出</th><td>${formatYen(totalCosts)}</td></tr>
+                    <tr><th>調整後支出合計（精算対象）</th><td>${formatYen(adjustedTotalCostsForBurden)}</td></tr>
+                </tbody></table>
+                <table class="results-table"><caption>支出内訳</caption><tbody>
+                    <tr><th>食費</th><td>${formatYen(totalFoodCosts)}</td></tr>
+                    <tr><th>ウチに使った費用</th><td>${formatYen(totalUchiCosts)}</td></tr>
+                    <tr><th>ソトに使った費用</th><td>${formatYen(totalSotoCosts)}</td></tr>
+                    <tr><th>固定費合計</th><td>${formatYen(totalFixedCosts)}</td></tr>
+                </tbody></table>
+                <table class="results-table"><caption>負担割合</caption><thead><tr><th></th><th>あきひろ</th><th>さとみ</th></tr></thead><tbody>
+                    <tr><th>調整後月収</th><td>${formatYen(adjustedHusbandIncome)}</td><td>${formatYen(adjustedWifeIncome)}</td></tr>
+                    <tr><th>負担割合</th><td>${(husbandRatio * 100).toFixed(1)}%</td><td>${(wifeRatio * 100).toFixed(1)}%</td></tr>
+                    <tr><th>負担額</th><td>${formatYen(husbandBurden)}</td><td>${formatYen(wifeBurden)}</td></tr>
+                </tbody></table>
+                <table class="results-table"><caption>精算</caption><thead><tr><th></th><th>あきひろ</th><th>さとみ</th></tr></thead><tbody>
+                    <tr><th>実際に支払った額</th><td>${formatYen(husbandTotalPaid)}</td><td>${formatYen(wifeTotalPaid)}</td></tr>
+                    <tr><th>調整後の支払額</th><td>${formatYen(husbandTotalPaid - 70250)}</td><td>-</td></tr>
+                </tbody></table>
+                <table class="settlement-table"><tbody><tr><td>${settlementText}</td></tr></tbody></table>
+            `;
+
+            // Render or update the chart
+            renderExpenseChart(totalFixedCosts, totalFoodCosts, totalUchiCosts, totalSotoCosts);
+        }
+
+        function renderExpenseChart(fixed, food, uchi, soto) {
+            const ctx = document.getElementById('expense-chart').getContext('2d');
+            const total = fixed + food + uchi + soto;
+
+            if (expenseChart) {
+                expenseChart.destroy();
+            }
+
+            if (total === 0) {
+                return; // Don't draw an empty chart
+            }
+
+            expenseChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['固定費', '食費', 'ウチ費用', 'ソト費用'],
+                    datasets: [{
+                        data: [fixed, food, uchi, soto],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: '支出の内訳'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        const percentage = (context.parsed / total * 100).toFixed(2) + '%';
+                                        label += context.formattedValue + '円 (' + percentage + ')';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderSettlementDetails() {
+            const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
+
+            // 1. Get all payments for each person
+            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
+            const husbandPayments = allCosts.filter(c => c.paidBy === 'akihiro');
+            const wifePayments = allCosts.filter(c => c.paidBy === 'satomi');
+
+            const husbandTotalPaid = husbandPayments.reduce((sum, c) => sum + (c.amount || 0), 0);
+            const wifeTotalPaid = wifePayments.reduce((sum, c) => sum + (c.amount || 0), 0);
+
+            const createPaymentList = (payments) => {
+                if (payments.length === 0) return '<li>支払いはありません</li>';
+                return payments.map(c => `<li><span>${escapeHTML(c.name)}</span> <span>${formatYen(c.amount)}</span></li>`).join('');
+            };
+
+            // 2. Recalculate burden 
+            const husbandIncome = currentData.husbandIncome || 0;
+            const wifeIncome = currentData.wifeIncome || 0;
+            const totalFixedCosts = (currentData.fixedCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalVariableCosts = (currentData.variableCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalCosts = totalFixedCosts + totalVariableCosts;
+            const adjustedHusbandIncome = Math.max(0, husbandIncome - 75250);
+            const adjustedWifeIncome = Math.max(0, wifeIncome + 5000);
+            const adjustedTotalIncome = adjustedHusbandIncome + adjustedWifeIncome;
+            let husbandRatio = adjustedTotalIncome <= 0 ? 0.5 : adjustedHusbandIncome / adjustedTotalIncome;
+            const adjustedTotalCostsForBurden = totalCosts - 70250;
+            let husbandBurden = Math.round(adjustedTotalCostsForBurden * husbandRatio);
+            let wifeBurden = adjustedTotalCostsForBurden - husbandBurden;
+            const husbandSettlement = (husbandTotalPaid - 70250) - husbandBurden;
+
+            let settlementText = '精算は不要です。';
+            if (husbandSettlement > 0) {
+                settlementText = `さとみは → あきひろに <strong>${Math.round(husbandSettlement).toLocaleString()}円</strong> 支払う`;
+            } else if (husbandSettlement < 0) {
+                settlementText = `あきひろは → さとみに <strong>${Math.round(-husbandSettlement).toLocaleString()}円</strong> 支払う`;
+            }
+
+            // 3. Generate HTML
+            settlementDetailsContentEl.innerHTML = `
+                <div class="settlement-grid">
+                    <div>
+                        <h3>あきひろの支払一覧</h3>
+                        <ul class="payment-list">${createPaymentList(husbandPayments)}</ul>
+                        <strong>支払合計: ${formatYen(husbandTotalPaid)}</strong>
+                    </div>
+                    <div>
+                        <h3>さとみの支払一覧</h3>
+                        <ul class="payment-list">${createPaymentList(wifePayments)}</ul>
+                        <strong>支払合計: ${formatYen(wifeTotalPaid)}</strong>
+                    </div>
+                </div>
+                <hr style="margin: 20px 0;">
+                <h3>精算計算</h3>
+                <table class="results-table">
+                    <tbody>
+                        <tr><th>精算対象の支出合計</th><td>${formatYen(adjustedTotalCostsForBurden)}</td></tr>
+                        <tr><th>あきひろの負担額 (${(husbandRatio * 100).toFixed(1)}%)</th><td>${formatYen(husbandBurden)}</td></tr>
+                        <tr><th>さとみの負担額 (${((1-husbandRatio) * 100).toFixed(1)}%)</th><td>${formatYen(wifeBurden)}</td></tr>
+                        <tr><td colspan="2" style="border: none; padding: 5px;"></td></tr>
+                        <tr><th>あきひろの調整後支払額</th><td>${formatYen(husbandTotalPaid)} - 70,250円 = <strong>${formatYen(husbandTotalPaid - 70250)}</strong></td></tr>
+                        <tr><th>あきひろの精算額</th><td>${formatYen(husbandTotalPaid - 70250)} (支払) - ${formatYen(husbandBurden)} (負担) = <strong>${formatYen(husbandSettlement)}</strong></td></tr>
+                    </tbody>
+                </table>
+                <table class="settlement-table" style="margin-top: 20px;">
+                    <tbody><tr><td>${settlementText}</td></tr></tbody>
+                </table>
+                <small style="display: block; margin-top: 15px; text-align: center; color: #666;">
+                    ※あきひろの調整後支払額 = 実際に支払った額 - 会社補助等 (70,250円)<br>
+                    ※精算額がプラスの場合は、さとみからあきひろへ支払い。マイナスの場合はその逆。
+                </small>
+            `;
+        }
+
+        // --- Event Listeners ---
+        function handleDateChange() {
+            localStorage.setItem('lastSelectedYear', yearSelectEl.value);
+            localStorage.setItem('lastSelectedMonth', monthSelectEl.value);
+            setDefaultDates();
+            loadData();
+        }
+
+        yearSelectEl.addEventListener('change', handleDateChange);
+        monthSelectEl.addEventListener('change', handleDateChange);
+
+        husbandIncomeEl.addEventListener('input', () => { currentData.husbandIncome = parseInt(husbandIncomeEl.value, 10) || 0; saveData(); });
+        wifeIncomeEl.addEventListener('input', () => { currentData.wifeIncome = parseInt(wifeIncomeEl.value, 10) || 0; saveData(); });
+
+        fixedCostsListEl.addEventListener('input', (e) => {
+            const index = e.target.dataset.index;
+            if (!index) return;
+            const cost = currentData.fixedCosts[index];
+            if (e.target.classList.contains('cost-name')) { cost.name = e.target.value; }
+            else if (e.target.classList.contains('cost-amount')) { cost.amount = parseInt(e.target.value, 10) || 0; }
+            else if (e.target.classList.contains('cost-paid-by')) { cost.paidBy = e.target.value; }
+            saveData();
+        });
+
+        fixedCostsListEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-danger')) {
+                if (confirm('この固定費を削除しますか？')) {
+                    const index = e.target.dataset.index;
+                    currentData.fixedCosts.splice(index, 1);
+                    saveData();
+                }
+            }
+        });
+
+        addFixedCostBtn.addEventListener('click', () => {
+            currentData.fixedCosts.push({ name: '', amount: 0, paidBy: 'akihiro', isPayerEditable: true });
+            saveData();
+        });
+
+        function addVariableCost(type) {
+            let dateEl, nameEl, amountEl, paidByEl;
+            if (type === 'food') { [dateEl, nameEl, amountEl, paidByEl] = [foodDateEl, foodNameEl, foodAmountEl, foodPaidByEl]; }
+            else if (type === 'uchi') { [dateEl, nameEl, amountEl, paidByEl] = [uchiDateEl, uchiNameEl, uchiAmountEl, uchiPaidByEl]; }
+            else { [dateEl, nameEl, amountEl, paidByEl] = [sotoDateEl, sotoNameEl, sotoAmountEl, sotoPaidByEl]; }
+            
+            const date = dateEl.value;
+            const name = nameEl.value.trim();
+            const amount = parseInt(amountEl.value, 10);
+            const paidBy = paidByEl.value;
+
+            if (!date || !name || isNaN(amount) || amount < 0) {
+                alert('日付、内容を正しく入力し、金額は0以上の数値を入力してください。');
+                return;
+            }
+            currentData.variableCosts.push({ id: Date.now(), type, date, name, amount, paidBy });
+            nameEl.value = ''; amountEl.value = ''; nameEl.focus();
+            saveData();
+        }
+
+        addFoodBtn.addEventListener('click', () => addVariableCost('food'));
+        addUchiBtn.addEventListener('click', () => addVariableCost('uchi'));
+        addSotoBtn.addEventListener('click', () => addVariableCost('soto'));
+
+        function handleVariableCostUpdate(e) {
+            const target = e.target;
+            const li = target.closest('.costs-item');
+            if (!li) return;
+            const id = parseInt(li.dataset.id, 10);
+            const cost = currentData.variableCosts.find(c => c.id === id);
+            if (!cost) return;
+
+            if (target.classList.contains('cost-date')) { cost.date = target.value; }
+            else if (target.classList.contains('cost-name')) { cost.name = target.value; }
+            else if (target.classList.contains('cost-amount')) { cost.amount = parseInt(target.value, 10) || 0; }
+            else if (target.classList.contains('cost-paid-by')) { cost.paidBy = target.value; }
+            
+            saveData();
+        }
+
+        function handleVariableCostDelete(e) {
+            if (e.target.classList.contains('btn-danger')) {
+                const li = e.target.closest('.costs-item');
+                if (!li) return;
+                if (confirm('この項目を削除しますか？')) {
+                    const id = parseInt(li.dataset.id, 10);
+                    currentData.variableCosts = currentData.variableCosts.filter(c => c.id !== id);
+                    saveData();
+                }
+            }
+        }
+
+        foodCostsListEl.addEventListener('change', handleVariableCostUpdate);
+        uchiCostsListEl.addEventListener('change', handleVariableCostUpdate);
+        sotoCostsListEl.addEventListener('change', handleVariableCostUpdate);
+
+        foodCostsListEl.addEventListener('click', handleVariableCostDelete);
+        uchiCostsListEl.addEventListener('click', handleVariableCostDelete);
+        sotoCostsListEl.addEventListener('click', handleVariableCostDelete);
+
+        printBtn.addEventListener('click', () => window.print());
+        resetBtn.addEventListener('click', () => {
+            if (confirm('本当に今月のデータをリセットしますか？この操作は元に戻せません。')) {
+                currentData = createDefaultData();
+                saveData();
+                alert('今月のデータをリセットしました。');
+            }
+        });
+
+        // --- Modal Logic ---
+        lineShareBtn.addEventListener('click', () => {
+            const selectedMonth = monthSelectEl.value;
+            const husbandIncome = currentData.husbandIncome || 0;
+            const wifeIncome = currentData.wifeIncome || 0;
+            const totalIncome = husbandIncome + wifeIncome;
+            const totalFixedCosts = (currentData.fixedCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalVariableCosts = (currentData.variableCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalFoodCosts = (currentData.variableCosts || []).filter(c => c.type === 'food').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalUchiCosts = (currentData.variableCosts || []).filter(c => c.type === 'uchi').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalSotoCosts = (currentData.variableCosts || []).filter(c => c.type === 'soto').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalCosts = totalFixedCosts + totalVariableCosts;
+            const adjustedHusbandIncome = Math.max(0, husbandIncome - 75250);
+            const adjustedWifeIncome = Math.max(0, wifeIncome + 5000);
+            const adjustedTotalIncome = adjustedHusbandIncome + adjustedWifeIncome;
+            let husbandRatio = adjustedTotalIncome <= 0 ? 0.5 : adjustedHusbandIncome / adjustedTotalIncome;
+            const adjustedTotalCostsForBurden = totalCosts - 70250;
+            let husbandBurden = Math.round(adjustedTotalCostsForBurden * husbandRatio);
+            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
+            const husbandTotalPaid = allCosts.filter(c => c.paidBy === 'akihiro').reduce((sum, c) => sum + (c.amount || 0), 0);
+            const husbandSettlement = (husbandTotalPaid - 70250) - husbandBurden;
+            let settlementText = '精算は不要です。';
+            if (husbandSettlement > 0) {
+                settlementText = `さとみは → あきひろに ${Math.round(husbandSettlement).toLocaleString()}円 支払う`;
+            } else if (husbandSettlement < 0) {
+                settlementText = `あきひろは → さとみに ${Math.round(-husbandSettlement).toLocaleString()}円 支払う`;
+            }
+            const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
+
+            const shareText = `
+【${selectedMonth}月 家計簿サマリー】
+
+◆ 収入
+あきひろ: ${formatYen(husbandIncome)}
+さとみ: ${formatYen(wifeIncome)}
+------------------
+合計: ${formatYen(totalIncome)}
+
+◆ 支出
+食費: ${formatYen(totalFoodCosts)}
+ウチ費用: ${formatYen(totalUchiCosts)}
+ソト費用: ${formatYen(totalSotoCosts)}
+固定費: ${formatYen(totalFixedCosts)}
+------------------
+合計: ${formatYen(totalCosts)}
+
+◆ 精算
+${settlementText}
+            `.trim();
+
+            const lineUrl = `https://line.me/R/msg/text/${encodeURIComponent(shareText)}`;
+            window.open(lineUrl, '_blank');
+        });
+
+        settlementDetailsBtn.addEventListener('click', () => {
+            renderSettlementDetails();
+            settlementModal.style.display = "block";
+        });
+
+        closeBtn.addEventListener('click', () => {
+            settlementModal.style.display = "none";
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == settlementModal) {
+                settlementModal.style.display = "none";
+            }
+        });
+
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>"']/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+        }
+    });
+    </script>
+</body>
+</html>
