@@ -855,7 +855,7 @@
 
         fixedCostsListEl.addEventListener('input', (e) => {
             const index = e.target.dataset.index;
-            if (!index) return;
+            if (index == null) return;
             const cost = currentData.fixedCosts[index];
             if (e.target.classList.contains('cost-name')) { cost.name = e.target.value; }
             else if (e.target.classList.contains('cost-amount')) { cost.amount = parseInt(e.target.value, 10) || 0; }
