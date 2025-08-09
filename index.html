@@ -853,7 +853,7 @@
         husbandIncomeEl.addEventListener('input', () => { currentData.husbandIncome = parseInt(husbandIncomeEl.value, 10) || 0; saveData(); });
         wifeIncomeEl.addEventListener('input', () => { currentData.wifeIncome = parseInt(wifeIncomeEl.value, 10) || 0; saveData(); });
 
-        fixedCostsListEl.addEventListener('input', (e) => {
+        fixedCostsListEl.addEventListener('change', (e) => {
             const index = e.target.dataset.index;
             if (index == null) return;
             const cost = currentData.fixedCosts[index];
