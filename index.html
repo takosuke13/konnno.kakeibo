@@ -781,24 +781,15 @@
         function renderSettlementDetails() {
             const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
 
-            // 1. Get all payments for each person
-            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
-            const husbandPayments = allCosts.filter(c => c.paidBy === 'akihiro');
-            const wifePayments = allCosts.filter(c => c.paidBy === 'satomi');
-
-            const husbandTotalPaid = husbandPayments.reduce((sum, c) => sum + (c.amount || 0), 0);
-            const wifeTotalPaid = wifePayments.reduce((sum, c) => sum + (c.amount || 0), 0);
-
-            const createPaymentList = (payments) => {
-                if (payments.length === 0) return '<li>支払いはありません</li>';
-                return payments.map(c => `<li><span>${escapeHTML(c.name)}</span> <span>${formatYen(c.amount)}</span></li>`).join('');
-            };
-
-            // 2. Recalculate burden 
+            // --- Data Calculation (from calculateAndRenderResults) ---
             const husbandIncome = currentData.husbandIncome || 0;
             const wifeIncome = currentData.wifeIncome || 0;
+            const totalIncome = husbandIncome + wifeIncome;
             const totalFixedCosts = (currentData.fixedCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalVariableCosts = (currentData.variableCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalFoodCosts = (currentData.variableCosts || []).filter(c => c.type === 'food').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalUchiCosts = (currentData.variableCosts || []).filter(c => c.type === 'uchi').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalSotoCosts = (currentData.variableCosts || []).filter(c => c.type === 'soto').reduce((sum, cost) => sum + (cost.amount || 0), 0);
+            const totalVariableCosts = totalFoodCosts + totalUchiCosts + totalSotoCosts;
             const totalCosts = totalFixedCosts + totalVariableCosts;
             const adjustedHusbandIncome = Math.max(0, husbandIncome - 75250);
             const adjustedWifeIncome = Math.max(0, wifeIncome + 5000);
@@ -807,8 +798,12 @@
             const adjustedTotalCostsForBurden = totalCosts - 70250;
             let husbandBurden = Math.round(adjustedTotalCostsForBurden * husbandRatio);
             let wifeBurden = adjustedTotalCostsForBurden - husbandBurden;
+            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
+            const husbandPayments = allCosts.filter(c => c.paidBy === 'akihiro');
+            const wifePayments = allCosts.filter(c => c.paidBy === 'satomi');
+            const husbandTotalPaid = husbandPayments.reduce((sum, c) => sum + (c.amount || 0), 0);
+            const wifeTotalPaid = wifePayments.reduce((sum, c) => sum + (c.amount || 0), 0);
             const husbandSettlement = (husbandTotalPaid - 70250) - husbandBurden;
-
             let settlementText = '精算は不要です。';
             if (husbandSettlement > 0) {
                 settlementText = `さとみは → あきひろに <strong>${Math.round(husbandSettlement).toLocaleString()}円</strong> 支払う`;
@@ -816,8 +811,29 @@
                 settlementText = `あきひろは → さとみに <strong>${Math.round(-husbandSettlement).toLocaleString()}円</strong> 支払う`;
             }
 
-            // 3. Generate HTML
+            const createPaymentList = (payments) => {
+                if (payments.length === 0) return '<li>支払いはありません</li>';
+                return payments.map(c => `<li><span>${escapeHTML(c.name)}</span> <span>${formatYen(c.amount)}</span></li>`).join('');
+            };
+
+            // --- Generate HTML ---
             settlementDetailsContentEl.innerHTML = `
+                <h3>収入の部</h3>
+                <table class="results-table"><tbody>
+                    <tr><th>あきひろの月収</th><td>${formatYen(husbandIncome)}</td></tr>
+                    <tr><th>さとみの月収</th><td>${formatYen(wifeIncome)}</td></tr>
+                    <tr><th><strong>合計収入</strong></th><td><strong>${formatYen(totalIncome)}</strong></td></tr>
+                </tbody></table>
+
+                <h3>支出の部</h3>
+                <table class="results-table"><tbody>
+                    <tr><th>食費</th><td>${formatYen(totalFoodCosts)}</td></tr>
+                    <tr><th>ウチに使った費用</th><td>${formatYen(totalUchiCosts)}</td></tr>
+                    <tr><th>ソトに使った費用</th><td>${formatYen(totalSotoCosts)}</td></tr>
+                    <tr><th>固定費</th><td>${formatYen(totalFixedCosts)}</td></tr>
+                    <tr><th><strong>合計支出</strong></th><td><strong>${formatYen(totalCosts)}</strong></td></tr>
+                </tbody></table>
+
                 <div class="settlement-grid">
                     <div>
                         <h3>あきひろの支払一覧</h3>
@@ -943,7 +959,90 @@
         uchiCostsListEl.addEventListener('click', handleVariableCostDelete);
         sotoCostsListEl.addEventListener('click', handleVariableCostDelete);
 
-        printBtn.addEventListener('click', () => window.print());
+        printBtn.addEventListener('click', () => {
+            // 1. Ensure the settlement details are up-to-date
+            renderSettlementDetails();
+
+            // 2. Get the content to print
+            const printContent = document.getElementById('settlement-details-content').innerHTML;
+            const year = yearSelectEl.value;
+            const month = monthSelectEl.value;
+            const title = `こんの家の家計簿 (${year}年${month}月)`;
+
+            // 3. Define print-specific styles
+            const printStyles = `
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    font-size: 10pt;
+                    margin: 20mm;
+                }
+                h1 { font-size: 16pt; text-align: center; margin-bottom: 1.5em; }
+                h3 { 
+                    font-size: 12pt; 
+                    border-bottom: 1px solid #ccc; 
+                    padding-bottom: 5px; 
+                    margin-top: 1.5em; 
+                    margin-bottom: 1em; 
+                }
+                .results-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-bottom: 1em; 
+                    font-size: 9pt;
+                }
+                .results-table th, .results-table td { 
+                    border: 1px solid #ccc; 
+                    padding: 4px 8px; 
+                    text-align: right; 
+                }
+                .results-table th { text-align: left; width: 40%; background-color: #f2f2f2; }
+                .settlement-grid { 
+                    display: grid; 
+                    grid-template-columns: 1fr 1fr; 
+                    gap: 20px; 
+                    page-break-inside: avoid;
+                }
+                .payment-list { list-style: none; padding: 0; margin: 0; font-size: 8pt; }
+                .payment-list li { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #eee; }
+                .payment-list li span:last-child { font-weight: bold; }
+                .settlement-table { width: 100%; margin-top: 1em; }
+                .settlement-table td { 
+                    background-color: #e7f3fe !important; 
+                    color: #0d47a1 !important; 
+                    text-align: center; 
+                    font-size: 1.2em; 
+                    font-weight: bold; 
+                    padding: 10px; 
+                    border: 1px solid #b3e5fc;
+                    border-radius: 4px;
+                }
+                small { font-size: 8pt; color: #555; text-align: center; display: block; margin-top: 2em; }
+                @media print { 
+                    .settlement-table td { -webkit-print-color-adjust: exact; color-adjust: exact; } 
+                }
+            `;
+
+            // 4. Create a new window and print
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${title}</title>
+                        <style>${printStyles}</style>
+                    </head>
+                    <body>
+                        <h1>${title}</h1>
+                        ${printContent}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { // Allow content to load before printing
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        });
         resetBtn.addEventListener('click', () => {
             if (confirm('本当に今月のデータをリセットしますか？この操作は元に戻せません。')) {
                 currentData = createDefaultData();
