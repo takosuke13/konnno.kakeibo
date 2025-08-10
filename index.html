@@ -231,8 +231,11 @@
         }
         .settlement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .payment-list { list-style: none; padding: 0; }
-        .payment-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
-        .payment-list li span:last-child { font-weight: bold; }
+        .payment-list li { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .payment-list .payment-date { flex-basis: 50px; flex-shrink: 0; color: #555; font-size: 0.85em; }
+        .payment-list .payment-date.fixed-cost-date { font-style: italic; color: #777; }
+        .payment-list .payment-name { flex-grow: 1; margin: 0 10px; }
+        .payment-list .payment-amount { flex-basis: 80px; flex-shrink: 0; font-weight: bold; text-align: right; }
 
         @media print {
             body { padding: 0; background-color: var(--white); }
@@ -813,7 +816,20 @@
 
             const createPaymentList = (payments) => {
                 if (payments.length === 0) return '<li>支払いはありません</li>';
-                return payments.map(c => `<li><span>${escapeHTML(c.name)}</span> <span>${formatYen(c.amount)}</span></li>`).join('');
+                const sortedPayments = payments.sort((a, b) => {
+                    if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+                    if (a.date && !b.date) return -1;
+                    if (!a.date && b.date) return 1;
+                    return 0;
+                });
+                return sortedPayments.map(c => {
+                    const dateHtml = c.date 
+                        ? `<span class="payment-date">${c.date.substring(5).replace('-', '/')}</span>` 
+                        : `<span class="payment-date fixed-cost-date">固定</span>`;
+                    const nameHtml = `<span class="payment-name">${escapeHTML(c.name)}</span>`;
+                    const amountHtml = `<span class="payment-amount">${formatYen(c.amount)}</span>`;
+                    return `<li>${dateHtml}${nameHtml}${amountHtml}</li>`;
+                }).join('');
             };
 
             // --- Generate HTML ---
@@ -1002,8 +1018,11 @@
                     page-break-inside: avoid;
                 }
                 .payment-list { list-style: none; padding: 0; margin: 0; font-size: 8pt; }
-                .payment-list li { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #eee; }
-                .payment-list li span:last-child { font-weight: bold; }
+                .payment-list li { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 0; border-bottom: 1px solid #eee; }
+                .payment-list .payment-date { flex-basis: 40px; flex-shrink: 0; font-size: 7.5pt; color: #666; }
+                .payment-list .payment-date.fixed-cost-date { font-style: italic; }
+                .payment-list .payment-name { flex-grow: 1; text-align: left; margin: 0 5px; }
+                .payment-list .payment-amount { flex-basis: 70px; flex-shrink: 0; font-weight: bold; text-align: right; }
                 .settlement-table { width: 100%; margin-top: 0.8em; }
                 .settlement-table td { 
                     background-color: #e7f3fe !important; 
