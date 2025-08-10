@@ -435,6 +435,7 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 // User is signed in.
+                alert('ログイン情報\nUID: ' + user.uid + '\n表示名: ' + user.displayName);
                 loginView.style.display = 'none';
                 appView.style.display = 'block';
                 userInfoEl.textContent = `${user.displayName} としてログイン中`;
