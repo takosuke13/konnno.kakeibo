@@ -434,11 +434,24 @@
         // --- Authentication --- 
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in.
-                loginView.style.display = 'none';
-                appView.style.display = 'block';
-                userInfoEl.textContent = `${user.displayName} としてログイン中`;
-                initApp();
+                // Check if the user is in the allowed list
+                db.collection('allowedUsers').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        // User is allowed, show the app
+                        loginView.style.display = 'none';
+                        appView.style.display = 'block';
+                        userInfoEl.textContent = `${user.displayName} としてログイン中`;
+                        initApp();
+                    } else {
+                        // User is not allowed, show message and sign out
+                        alert('このアカウントは、この家計簿アプリの利用が許可されていません。\n別のGoogleアカウントで再度お試しください。');
+                        auth.signOut();
+                    }
+                }).catch(err => {
+                    alert('認証情報の確認中にエラーが発生しました。');
+                    console.error("Auth check error", err);
+                    auth.signOut();
+                });
             } else {
                 // User is signed out.
                 loginView.style.display = 'block';
