@@ -6,10 +6,9 @@ service cloud.firestore {
       allow read, write: if exists(/databases/$(database)/documents/allowedUsers/$(request.auth.uid));
     }
 
-    // allowedUsersコレクションは誰でも読み取り可能（UIDの存在確認のため）
-    // ただし、クライアントからの書き込みは禁止し、コンソールからのみ追加できるようにする
+    // ユーザーは自分のUIDに対応するallowedUsersドキュメントのみ読み取り可能
     match /allowedUsers/{userId} {
-      allow read: if true;
+      allow read: if request.auth.uid == userId;
       allow write: if false;
     }
   }

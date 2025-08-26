@@ -274,25 +274,7 @@
             </div>
 
             <div class="section">
-                <h2>1. 収入</h2>
-                <div class="input-group">
-                    <div class="input-field"><label for="husband-income">あきひろの月収（円）</label><input type="number" id="husband-income" placeholder="例: 300000"></div>
-                    <div class="input-field"><label for="wife-income">さとみの月収（円）</label><input type="number" id="wife-income" placeholder="例: 300000"></div>
-                </div>
-                <div style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin-top: -10px; margin-bottom: 20px; font-size: 0.9em;">
-                    <small><strong>※負担割合の計算について</strong><br>負担割合は、以下の調整後金額を基に計算されます。<br>・あきひろ：月収 - 75,250円（住宅手当分）<br>・さとみ：月収 + 5,000円</small>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>2. 固定費</h2>
-                <ul id="fixed-costs-list" class="costs-list"></ul>
-                <div id="rent-details" style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin: 10px 0; font-size: 0.9em;"></div>
-                <button id="add-fixed-cost-btn" class="btn">＋ 固定費を追加</button>
-            </div>
-
-            <div class="section">
-                <h2>3. 変動費</h2>
+                <h2>1. 変動費</h2>
                 <h3>食費</h3>
                 <div class="category-summary"><strong>合計: <span id="food-total">0円</span></strong></div>
                 <div class="input-group variable-cost-form">
@@ -325,6 +307,24 @@
                     <button id="add-soto-btn" class="btn">追加</button>
                 </div>
                 <ul id="soto-costs-list" class="costs-list"></ul>
+            </div>
+
+            <div class="section">
+                <h2>2. 固定費</h2>
+                <ul id="fixed-costs-list" class="costs-list"></ul>
+                <div id="rent-details" style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin: 10px 0; font-size: 0.9em;"></div>
+                <button id="add-fixed-cost-btn" class="btn">＋ 固定費を追加</button>
+            </div>
+
+            <div class="section">
+                <h2>3. 収入</h2>
+                <div class="input-group">
+                    <div class="input-field"><label for="husband-income">あきひろの月収（円）</label><input type="number" id="husband-income" placeholder="例: 300000"></div>
+                    <div class="input-field"><label for="wife-income">さとみの月収（円）</label><input type="number" id="wife-income" placeholder="例: 300000"></div>
+                </div>
+                <div style="padding: 10px; background-color: #f0f0f0; border-radius: 4px; margin-top: -10px; margin-bottom: 20px; font-size: 0.9em;">
+                    <small><strong>※負担割合の計算について</strong><br>負担割合は、以下の調整後金額を基に計算されます。<br>・あきひろ：月収 - 75,250円（住宅手当分）<br>・さとみ：月収 + 5,000円</small>
+                </div>
             </div>
 
             <div class="section">
@@ -1142,7 +1142,7 @@ ${settlementText}
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
-            return str.replace(/[&<>"']/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+            return str.replace(/[&<>"]/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
         }
     });
     </script>
