@@ -853,6 +853,15 @@
                 }).join('');
             };
 
+            const memoContent = currentData.memo || '';
+            let memoHtml = '';
+            if (memoContent.trim()) {
+                memoHtml = `
+                    <h3>メモ</h3>
+                    <p style="white-space: pre-wrap; background-color: #f9f9f9; padding: 15px; border-radius: 4px; border: 1px solid #eee; font-size: 0.95em;">${escapeHTML(memoContent)}</p>
+                `;
+            }
+
             // --- Generate HTML ---
             settlementDetailsContentEl.innerHTML = `
                 <h3>収入の部</h3>
@@ -897,6 +906,9 @@
                 <table class="settlement-table" style="margin-top: 20px;">
                     <tbody><tr><td>${settlementText}</td></tr></tbody>
                 </table>
+                
+                ${memoHtml}
+
                 <small style="display: block; margin-top: 15px; text-align: center; color: #666;">
                     ※あきひろの調整後支払額 = 実際に支払った額 - 会社補助等 (70,250円)<br>
                     ※精算額がプラスの場合は、さとみからあきひろへ支払い。マイナスの場合はその逆。
@@ -1129,6 +1141,12 @@
             }
             const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
 
+            const memoContent = currentData.memo || '';
+            let memoText = '';
+            if (memoContent.trim()) {
+                memoText = `\n\n◆ メモ\n${memoContent.trim()}`;
+            }
+
             const shareText = `
 【${selectedMonth}月 家計簿サマリー】
 
@@ -1147,7 +1165,7 @@
 合計: ${formatYen(totalCosts)}
 
 ◆ 精算
-${settlementText}
+${settlementText}${memoText}
             `.trim();
 
             const lineUrl = `https://line.me/R/msg/text/${encodeURIComponent(shareText)}`;
