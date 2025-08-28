@@ -242,6 +242,20 @@
         .payment-list .payment-name { flex-grow: 1; margin: 0 10px; }
         .payment-list .payment-amount { flex-basis: 80px; flex-shrink: 0; font-weight: bold; text-align: right; }
 
+        @media (max-width: 600px) {
+            .input-group {
+                row-gap: 12px; /* 折り返し時の垂直方向の隙間を確保 */
+            }
+            .variable-cost-form .input-field {
+                flex-basis: calc(50% - 8px); /* 金額と支払者を横並びにするための基本幅 */
+            }
+            /* 日付と内容の入力欄は常に全幅を使用 */
+            .variable-cost-form .input-field:nth-child(1),
+            .variable-cost-form .input-field:nth-child(2) {
+                flex-basis: 100%;
+            }
+        }
+
         @media print {
             body { padding: 0; background-color: var(--white); }
             .container { box-shadow: none; border: 1px solid var(--border-color); }
