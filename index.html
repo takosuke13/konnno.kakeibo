@@ -359,6 +359,11 @@
         </div>
     </div>
 
+    <div class="container" style="margin-top: 20px;">
+        <h2>メモ</h2>
+        <textarea id="memo-area" style="width: 100%; min-height: 120px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; font-size: 1em; box-sizing: border-box;" placeholder="来月の予定や特記事項などを記録..."></textarea>
+    </div>
+
     <!-- Settlement Details Modal -->
     <div id="settlement-modal" class="modal">
         <div class="modal-content">
@@ -409,6 +414,7 @@
         const printBtn = document.getElementById('print-btn');
         const resetBtn = document.getElementById('reset-btn');
         const lineShareBtn = document.getElementById('line-share-btn');
+        const memoAreaEl = document.getElementById('memo-area');
 
         // Modal elements
         const settlementModal = document.getElementById('settlement-modal');
@@ -537,7 +543,8 @@
                     { name: '水道代（2ヶ月に1回：奇数月）', amount: 0, paidBy: 'akihiro', isPayerEditable: false },
                     { name: '保育園給食代', amount: 5000, paidBy: 'akihiro', isPayerEditable: true }
                 ],
-                variableCosts: []
+                variableCosts: [],
+                memo: ''
             };
         }
 
@@ -584,6 +591,7 @@
                 // Update UI with the new data
                 husbandIncomeEl.value = currentData.husbandIncome || '';
                 wifeIncomeEl.value = currentData.wifeIncome || '';
+                memoAreaEl.value = currentData.memo || '';
                 updateAllUI();
 
                 if (needsSave) {
@@ -909,6 +917,11 @@
 
         husbandIncomeEl.addEventListener('input', () => { currentData.husbandIncome = parseInt(husbandIncomeEl.value, 10) || 0; saveData(); });
         wifeIncomeEl.addEventListener('input', () => { currentData.wifeIncome = parseInt(wifeIncomeEl.value, 10) || 0; saveData(); });
+
+        memoAreaEl.addEventListener('input', () => {
+            currentData.memo = memoAreaEl.value;
+            saveData();
+        });
 
         fixedCostsListEl.addEventListener('change', (e) => {
             const index = e.target.dataset.index;
