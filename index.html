@@ -254,6 +254,17 @@
             .variable-cost-form .input-field:nth-child(2) {
                 flex-basis: 100%;
             }
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            .actions > div {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
         }
 
         @media print {
@@ -365,7 +376,6 @@
             <div class="actions">
                 <button id="reset-btn" class="btn btn-danger">今月のデータをリセット</button>
                 <div>
-                    <button id="line-share-btn" class="btn" style="background-color: #00B900;">LINEで共有</button>
                     <button id="settlement-details-btn" class="btn">精算の詳細</button>
                     <button id="print-btn" class="btn">このページを印刷</button>
                 </div>
@@ -426,7 +436,6 @@
         const resultsEl = document.getElementById('results');
         const printBtn = document.getElementById('print-btn');
         const resetBtn = document.getElementById('reset-btn');
-        const lineShareBtn = document.getElementById('line-share-btn');
         const memoAreaEl = document.getElementById('memo-area');
 
         // Modal elements
@@ -1127,64 +1136,6 @@
         });
 
         // --- Modal Logic ---
-        lineShareBtn.addEventListener('click', () => {
-            const selectedMonth = monthSelectEl.value;
-            const husbandIncome = currentData.husbandIncome || 0;
-            const wifeIncome = currentData.wifeIncome || 0;
-            const totalIncome = husbandIncome + wifeIncome;
-            const totalFixedCosts = (currentData.fixedCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalVariableCosts = (currentData.variableCosts || []).reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalFoodCosts = (currentData.variableCosts || []).filter(c => c.type === 'food').reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalUchiCosts = (currentData.variableCosts || []).filter(c => c.type === 'uchi').reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalSotoCosts = (currentData.variableCosts || []).filter(c => c.type === 'soto').reduce((sum, cost) => sum + (cost.amount || 0), 0);
-            const totalCosts = totalFixedCosts + totalVariableCosts;
-            const adjustedHusbandIncome = Math.max(0, husbandIncome - 75250);
-            const adjustedWifeIncome = Math.max(0, wifeIncome + 5000);
-            const adjustedTotalIncome = adjustedHusbandIncome + adjustedWifeIncome;
-            let husbandRatio = adjustedTotalIncome <= 0 ? 0.5 : adjustedHusbandIncome / adjustedTotalIncome;
-            const adjustedTotalCostsForBurden = totalCosts - 70250;
-            let husbandBurden = Math.round(adjustedTotalCostsForBurden * husbandRatio);
-            const allCosts = (currentData.fixedCosts || []).concat(currentData.variableCosts || []);
-            const husbandTotalPaid = allCosts.filter(c => c.paidBy === 'akihiro').reduce((sum, c) => sum + (c.amount || 0), 0);
-            const husbandSettlement = (husbandTotalPaid - 70250) - husbandBurden;
-            let settlementText = '精算は不要です。';
-            if (husbandSettlement > 0) {
-                settlementText = `さとみは → あきひろに ${Math.round(husbandSettlement).toLocaleString()}円 支払う`;
-            } else if (husbandSettlement < 0) {
-                settlementText = `あきひろは → さとみに ${Math.round(-husbandSettlement).toLocaleString()}円 支払う`;
-            }
-            const formatYen = (num) => `${(num || 0).toLocaleString()}円`;
-
-            const memoContent = currentData.memo || '';
-            let memoText = '';
-            if (memoContent.trim()) {
-                memoText = `\n\n◆ メモ\n${memoContent.trim()}`;
-            }
-
-            const shareText = `
-【${selectedMonth}月 家計簿サマリー】
-
-◆ 収入
-あきひろ: ${formatYen(husbandIncome)}
-さとみ: ${formatYen(wifeIncome)}
-------------------
-合計: ${formatYen(totalIncome)}
-
-◆ 支出
-食費: ${formatYen(totalFoodCosts)}
-ウチ費用: ${formatYen(totalUchiCosts)}
-ソト費用: ${formatYen(totalSotoCosts)}
-固定費: ${formatYen(totalFixedCosts)}
-------------------
-合計: ${formatYen(totalCosts)}
-
-◆ 精算
-${settlementText}${memoText}
-            `.trim();
-
-            const lineUrl = `https://line.me/R/msg/text/${encodeURIComponent(shareText)}`;
-            window.open(lineUrl, '_blank');
-        });
 
         settlementDetailsBtn.addEventListener('click', () => {
             renderSettlementDetails();
