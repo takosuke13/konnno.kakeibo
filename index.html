@@ -654,6 +654,7 @@
                     <input type="text" class="cost-name" value="${escapeHTML(cost.name)}" placeholder="項目名" data-index="${index}">
                     <input type="number" class="cost-amount" value="${cost.amount === 0 || cost.amount === null ? '' : cost.amount}" placeholder="金額" inputmode="numeric" data-index="${index}">
                     ${payerHtml}
+                    <button class="btn btn-danger" data-index="${index}" style="flex: 0.5;">削除</button>
                 `;
                 fixedCostsListEl.appendChild(li);
             });
@@ -964,6 +965,18 @@
             }, 1000); // 1秒間入力がなければ保存
         });
 
+        fixedCostsListEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-danger')) {
+                const index = e.target.dataset.index;
+                if (index == null) return;
+
+                if (confirm('この固定費項目を削除しますか？')) {
+                    currentData.fixedCosts.splice(index, 1);
+                    saveData();
+                }
+            }
+        });
+
         fixedCostsListEl.addEventListener('change', (e) => {
             const index = e.target.dataset.index;
             if (index == null) return;
@@ -977,6 +990,11 @@
         
 
         addFixedCostBtn.addEventListener('click', () => {
+            const lastCost = currentData.fixedCosts[currentData.fixedCosts.length - 1];
+            if (lastCost && !lastCost.name.trim() && !lastCost.amount) {
+                alert('最後の固定費項目が空です。先に内容を入力してください。');
+                return;
+            }
             currentData.fixedCosts.push({ name: '', amount: 0, paidBy: 'akihiro', isPayerEditable: true });
             saveData();
         });
