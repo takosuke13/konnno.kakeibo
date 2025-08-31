@@ -182,6 +182,19 @@
             }
         }
 
+        async function saveMemo() {
+            saveStatusEl.textContent = '保存中...';
+            try {
+                await getCurrentDocRef().update({ memo: currentData.memo });
+                const now = new Date();
+                saveStatusEl.textContent = `最終保存: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            } catch (e) {
+                console.error("メモの保存に失敗しました。", e);
+                saveStatusEl.textContent = '保存エラー';
+                alert("メモの保存に失敗しました。通信環境を確認してください。");
+            }
+        }
+
         function loadData() {
             if (unsubscribe) {
                 unsubscribe(); // Detach previous listener
@@ -556,7 +569,7 @@
             currentData.memo = memoAreaEl.value;
             clearTimeout(memoSaveTimeout);
             memoSaveTimeout = setTimeout(() => {
-                saveData();
+                saveMemo();
             }, 1000); // 1秒間入力がなければ保存
         });
 
