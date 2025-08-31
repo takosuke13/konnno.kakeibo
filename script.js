@@ -205,7 +205,15 @@
                 let needsSave = false;
 
                 if (doc.exists) {
-                    currentData = doc.data();
+                    const newData = doc.data();
+                    // If only the memo has changed, just update the memo field
+                    if (isEqual(omit(newData, 'memo'), omit(currentData, 'memo'))) {
+                        currentData.memo = newData.memo;
+                        memoAreaEl.value = newData.memo || '';
+                        return;
+                    }
+                    currentData = newData;
+
                     // Ensure data structure is sound with a more robust check
                     if (!Array.isArray(currentData.fixedCosts) || currentData.fixedCosts.length === 0) {
                         console.log("Fixed costs are missing or invalid. Restoring defaults.");
@@ -792,6 +800,16 @@
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
-            return str.replace(/[&<>"]/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+            return str.replace(/[&<>"']/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+        }
+
+        function isEqual(obj1, obj2) {
+            return JSON.stringify(obj1) === JSON.stringify(obj2);
+        }
+
+        function omit(obj, key) {
+            const newObj = { ...obj };
+            delete newObj[key];
+            return newObj;
         }
     });
