@@ -34,8 +34,6 @@
         const resetBtn = document.getElementById('reset-btn');
         const memoAreaEl = document.getElementById('memo-area');
 
-        const copySettlementBtn = document.getElementById('copy-settlement-btn');
-
         // Modal elements
         const settlementModal = document.getElementById('settlement-modal');
         const settlementDetailsBtn = document.getElementById('settlement-details-btn');
@@ -674,15 +672,6 @@
         foodCostsListEl.addEventListener('click', handleVariableCostDelete);
         uchiCostsListEl.addEventListener('click', handleVariableCostDelete);
         sotoCostsListEl.addEventListener('click', handleVariableCostDelete);
-
-        copySettlementBtn.addEventListener('click', () => {
-            const settlementText = resultsEl.querySelector('.settlement-table td').innerText;
-            navigator.clipboard.writeText(settlementText).then(() => {
-                alert('精算内容をクリップボードにコピーしました。');
-            }, () => {
-                alert('クリップボードへのコピーに失敗しました。');
-            });
-        });
 
         printBtn.addEventListener('click', () => {
             // 1. Ensure the settlement details are up-to-date
