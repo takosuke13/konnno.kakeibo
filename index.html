@@ -276,6 +276,19 @@
             }
         }
 
+        @media (max-width: 600px) {
+            .container div[style*="display: flex; align-items: center; justify-content: center;"] {
+                flex-direction: column; /* Stack items vertically */
+                gap: 10px; /* Reduce gap */
+            }
+            .container div[style*="display: flex; align-items: center; justify-content: center;"] h1 {
+                font-size: 1.5em; /* Adjust font size for smaller screens */
+            }
+            .container div[style*="display: flex; align-items: center; justify-content: center;"] img {
+                height: 50px !important; /* Adjust image height */
+            }
+        }
+
         @media print {
             body { padding: 0; background-color: var(--white); }
             .container { box-shadow: none; border: 1px solid var(--border-color); }
