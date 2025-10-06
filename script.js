@@ -220,6 +220,10 @@
                     currentData = newData;
 
                     // Ensure data structure is sound with a more robust check
+                    if (currentData.memo === undefined) {
+                        currentData.memo = '';
+                        needsSave = true;
+                    }
                     if (!Array.isArray(currentData.fixedCosts) || currentData.fixedCosts.length === 0) {
                         console.log("Fixed costs are missing or invalid. Restoring defaults.");
                         currentData.fixedCosts = defaultData.fixedCosts;
