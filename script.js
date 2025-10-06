@@ -71,6 +71,7 @@
         let unsubscribe; // To detach Firestore listener
         let expenseChart = null; // To hold the chart instance
         let memoSaveTimeout;
+        let saveTimeout; // Timeout for debouncing saveData
 
         // --- Authentication ---
         auth.onAuthStateChanged(user => {
@@ -167,6 +168,12 @@
             };
         }
 
+        // Debounced save function
+        function requestSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveData, 1000); // Save after 1 sec of inactivity
+        }
+
         async function saveData() {
             saveStatusEl.textContent = '保存中...';
             try {
@@ -236,7 +243,7 @@
 
                 if (needsSave) {
                     console.log("Saving restored/new data to Firestore.");
-                    saveData();
+                    requestSave();
                 }
 
             }, error => {
@@ -568,8 +575,8 @@
         yearSelectEl.addEventListener('change', handleDateChange);
         monthSelectEl.addEventListener('change', handleDateChange);
 
-        husbandIncomeEl.addEventListener('input', () => { currentData.husbandIncome = parseInt(husbandIncomeEl.value, 10) || 0; saveData(); });
-        wifeIncomeEl.addEventListener('input', () => { currentData.wifeIncome = parseInt(wifeIncomeEl.value, 10) || 0; saveData(); });
+        husbandIncomeEl.addEventListener('input', () => { currentData.husbandIncome = parseInt(husbandIncomeEl.value, 10) || 0; requestSave(); });
+        wifeIncomeEl.addEventListener('input', () => { currentData.wifeIncome = parseInt(wifeIncomeEl.value, 10) || 0; requestSave(); });
 
         memoAreaEl.addEventListener('input', () => {
             currentData.memo = memoAreaEl.value;
@@ -586,7 +593,7 @@
 
                 if (confirm('この固定費項目を削除しますか？')) {
                     currentData.fixedCosts.splice(index, 1);
-                    saveData();
+                    requestSave();
                 }
             }
         });
@@ -598,7 +605,7 @@
             if (e.target.classList.contains('cost-name')) { cost.name = e.target.value; }
             else if (e.target.classList.contains('cost-amount')) { cost.amount = parseInt(e.target.value, 10) || 0; }
             else if (e.target.classList.contains('cost-paid-by')) { cost.paidBy = e.target.value; }
-            saveData();
+            requestSave();
         });
 
         
@@ -610,7 +617,7 @@
                 return;
             }
             currentData.fixedCosts.push({ name: '', amount: 0, paidBy: 'akihiro', isPayerEditable: true });
-            saveData();
+            requestSave();
         });
 
         function addVariableCost(type) {
@@ -630,7 +637,7 @@
             }
             currentData.variableCosts.push({ id: Date.now(), type, date, name, amount, paidBy });
             nameEl.value = ''; amountEl.value = ''; nameEl.focus();
-            saveData();
+            requestSave();
         }
 
         addFoodBtn.addEventListener('click', () => addVariableCost('food'));
@@ -650,7 +657,7 @@
             else if (target.classList.contains('cost-amount')) { cost.amount = parseInt(target.value, 10) || 0; }
             else if (target.classList.contains('cost-paid-by')) { cost.paidBy = target.value; }
             
-            saveData();
+            requestSave();
         }
 
         function handleVariableCostDelete(e) {
@@ -660,7 +667,7 @@
                 if (confirm('この項目を削除しますか？')) {
                     const id = parseInt(li.dataset.id, 10);
                     currentData.variableCosts = currentData.variableCosts.filter(c => c.id !== id);
-                    saveData();
+                    requestSave();
                 }
             }
         }
@@ -765,7 +772,7 @@
         resetBtn.addEventListener('click', () => {
             if (confirm('本当に今月のデータをリセットしますか？この操作は元に戻せません。')) {
                 currentData = createDefaultData();
-                saveData();
+                requestSave();
                 alert('今月のデータをリセットしました。');
             }
         });
