@@ -183,7 +183,7 @@
             } catch (e) {
                 console.error("データの保存に失敗しました。", e);
                 saveStatusEl.textContent = '保存エラー';
-                alert("データの保存に失敗しました。通信環境を確認してください。");
+                alert(`データの保存に失敗しました。通信環境を確認してください。\nエラー詳細: ${e.message}`);
             }
         }
 
